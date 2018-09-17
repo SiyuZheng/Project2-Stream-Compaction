@@ -42,7 +42,7 @@ namespace StreamCompaction {
         /**
          * Performs prefix-sum (aka scan) on idata, storing the result into odata.
          */
-        void scan(int n, int *odata, const int *idata) {
+        void Nonscan(int n, int *odata, const int *idata) {
             
             // TODO
 			
@@ -83,6 +83,68 @@ namespace StreamCompaction {
 
             
         }
+
+		__global__ void kernOptUpSweep(int n, int d, int *odata) {
+			int index = (blockDim.x * blockIdx.x) + threadIdx.x;
+			if (index >= n) {
+				return;
+			}
+			int step = 1 << (d + 1);
+			odata[index * step + step - 1] += odata[index * step + (1 << d) - 1];
+		}
+
+		__global__ void kernOptDownSweep(int n, int d, int *odata) {
+			int index = (blockDim.x * blockIdx.x) + threadIdx.x;
+			if (index >= n) {
+				return;
+			}
+			int step = 1 << (d + 1);
+			int t = odata[index*step + (1 << d) - 1];
+			odata[index * step + (1 << d) - 1] = odata[index * step + step - 1];
+			odata[index * step + step - 1] += t;
+		}
+
+		void scan(int n, int *odata, const int *idata) {
+			int upLimit = ilog2ceil(n);
+			int len = 1 << upLimit;
+
+			int blockSize = 1024;
+			dim3 threadsPerBlock(blockSize);
+			dim3 blocksPerGrid((len + blockSize - 1) / blockSize);
+
+			int *dev_data;
+			cudaMalloc((void**)&dev_data, len * sizeof(int));
+			checkCUDAError("cudaMalloc dev_data failed!");
+			cudaMemcpy(dev_data, idata, len * sizeof(int), cudaMemcpyHostToDevice);
+			checkCUDAError("cudaMemcpy dev_data failed!");
+
+
+
+			timer().startGpuTimer();
+			for (int d = 0; d <= upLimit - 1; d++) {
+				int step = 1 << (d + 1);
+				int tempLen = len / step;
+				blocksPerGrid = dim3((tempLen + blockSize) / blockSize);
+				kernOptUpSweep << <blocksPerGrid, threadsPerBlock >> > (tempLen, d, dev_data);
+				checkCUDAError("kernUpSweep failed!");
+			}
+
+			cudaMemset(&dev_data[len - 1], 0, sizeof(int));
+			checkCUDAError("cudaMemcpy set last one to be zero failed!");
+
+			for (int d = upLimit - 1; d >= 0; d--) {
+				int step = 1 << (d + 1);
+				int tempLen = len / step;
+				blocksPerGrid = dim3((tempLen + blockSize) / blockSize);
+				kernOptDownSweep << <blocksPerGrid, threadsPerBlock >> > (tempLen, d, dev_data);
+				checkCUDAError("kernDownSweep failed!");
+			}
+			timer().endGpuTimer();
+			cudaMemcpy(odata, dev_data, len * sizeof(int), cudaMemcpyDeviceToHost);
+			checkCUDAError("cudaMemcpy dev_data failed!");
+			cudaFree(dev_data);
+			cudaDeviceSynchronize();
+		}
 
 		void gpuScan(int n, int *data) {
 			int upLimit = ilog2ceil(n);
