@@ -42,7 +42,7 @@ namespace StreamCompaction {
         /**
          * Performs prefix-sum (aka scan) on idata, storing the result into odata.
          */
-        void Nonscan(int n, int *odata, const int *idata) {
+        void nonoptscan(int n, int *odata, const int *idata) {
             
             // TODO
 			

@@ -4,7 +4,47 @@ CUDA Stream Compaction
 **University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 2**
 
 * Siyu Zheng
-* Tested on: Windows 10, i7-8750 @ 2.20GHz 16GB, GTX 1060 6GB (Personal Laptop)
+* Tested on: Windows 10, i7-8750 @ 2.20GHz 16GB, GTX 1060 6GB, Visual Studio 2015, CUDA 8.0(Personal Laptop)
+
+## Description
+
+### Stream Compation
+![](img/streamCompaction.png)
+
+The goal of stream compaction is that, given an array of elements, we create a new array with elements that meet a certain criteria, e.g. non null and preserve order. It's used in path tracing, collision detection, sparse matrix compression, etc.
+
+* Step 1:  Compute temporary array
+* Step 2:  Run exclusive scan on temporary array
+* Step 3:  Scatter
+
+### CPU Scan
+
+### Naive GPU Scan
+
+### Work-Efficient GPU Scan
+
+### Thrust's Implementation
+
+
+## Performance Analysis
+
+* Roughly optimize the block sizes of each of your implementations for minimal run time on your GPU.
+Array Size 1<<15 
+
+
+| Block Size    | 128           |  256     | 512     |1024    |
+| ------------- |:-------------:|：-------:| ：-----:|：-----: |
+| naive         | 0.16784       | 0.132096 | 0.157504|0.155584 |
+| coherent      | 1639.7        |   1534.2 | 0.094048| 0.096736 |
+
+
+* Compare all of these GPU Scan implementations (Naive, Work-Efficient, and Thrust) to the serial CPU version of Scan. Plot a graph of the comparison (with array size on the independent axis).
+
+* Write a brief explanation of the phenomena you see here.
+
+* 
+
+## Result
 
 ```
 
