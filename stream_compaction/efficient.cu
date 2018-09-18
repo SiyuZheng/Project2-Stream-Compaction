@@ -166,6 +166,8 @@ namespace StreamCompaction {
 			}
 		}
 
+
+
         /**
          * Performs stream compaction on idata, storing the result into odata.
          * All zeroes are discarded.

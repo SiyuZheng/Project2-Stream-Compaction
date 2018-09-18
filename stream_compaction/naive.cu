@@ -74,5 +74,6 @@ namespace StreamCompaction {
 			cudaDeviceSynchronize();
             
         }
+
     }
 }

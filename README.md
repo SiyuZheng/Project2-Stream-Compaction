@@ -18,13 +18,35 @@ The goal of stream compaction is that, given an array of elements, we create a n
 * Step 3:  Scatter
 
 ### CPU Scan
+Use for loop to compute an exclusive prefix sum. 
+![](img/cpu.png)
+
+Number of add: O(n)
 
 ### Naive GPU Scan
 
+![](img/naive.png)
+
+Use double-buffer to scan two array. First do exclusive scan, then do shift right to get inclusive scan array.
+
+Number of add: O(nlog2(n))
+
 ### Work-Efficient GPU Scan
+Up-Sweep (Reduce) Phase:
+
+![](img/upsweep.png)
+
+ In the reduce phase, we traverse the tree from leaves to root computing partial sums at internal nodes of the tree.
+
+Down-Sweep Phase:
+
+![](img/downsweep.png)
+
+In the down-sweep phase, we traverse back down the tree from the root, using the partial sums from the reduce phase to build the scan in place on the array. We start by inserting zero at the root of the tree, and on each step, each node at the current level passes its own value to its left child, and the sum of its value and the former value of its left child to its right child.
 
 ### Thrust's Implementation
 
+Wraps a call to the Thrust library function thrust::exclusive_scan(first, last, result).
 
 ## Performance Analysis
 
@@ -39,12 +61,24 @@ Array Size 1<<15
 
 
 * Compare all of these GPU Scan implementations (Naive, Work-Efficient, and Thrust) to the serial CPU version of Scan. Plot a graph of the comparison (with array size on the independent axis).
+![](img/pot1.png)
+![](img/pot2.png)
+![](img/npot1.png)
+![](img/npot2.png)
 
 * Write a brief explanation of the phenomena you see here.
 
-* 
+At first, I used non-optimized efficient GPU scan which is slower than CPU approach. Then I optimized it with resizable blockPerGrid, so that in each level of depth in scanning we can terminate idle threads. In upSweep and downSweep stage, modify the array index to maintain correctness. As a result, in test of array size larger than 16, the effiecient GPU approach has better performance than CPU approach.
+
+Compare 4 implementation, we can see that when the array size is small, the CPU approach has the best performance. Effiecient GPU approach is better than naive approach. After array size larger than 16, GPU implementation has better performance than CPU. For thrust approach, when array size is large, it has the best performance and the as the size grows, the running time doesn't increase much so it's quite stable.
+
+I checked timeline when array size is 1 << 15. The function call of thrust::exclusive_scan is about one half of each kernel sweep call. So in the thrust implementation most expense is on memory allocation and copy. I guess the base cost for memory operation is quite big in thrust, but as the array size grows, since it might has some kind of memory access optimization like contiguous memory access, the memory operation cost might not increase a lot. As a result, in larger array, thrust implementation has the best performance.
+
+The performance bottleneck for naive approach is mainly the algorithm. For non-optimized efficient scan, too many idle threads is the bottleneck. For optimized efficient GPU approach, the bottleneck is mainly memory I/O. If we switch to shared memory, the performance will increase a lot. 
 
 ## Result
+
+Array size = 1<<15
 
 ```
 
