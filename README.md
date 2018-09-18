@@ -59,6 +59,8 @@ Array Size 1<<15
 | naive         | 0.16784       | 0.132096 | 0.157504|0.155584 |
 | coherent      | 1639.7        |   1534.2 | 0.094048| 0.096736 |
 
+In my experiment, the performance for different block size is quite closed. I chose 1024 for my further tests.
+
 
 * Compare all of these GPU Scan implementations (Naive, Work-Efficient, and Thrust) to the serial CPU version of Scan. Plot a graph of the comparison (with array size on the independent axis).
 ![](img/pot1.png)
@@ -70,7 +72,7 @@ Array Size 1<<15
 
 At first, I used non-optimized efficient GPU scan which is slower than CPU approach. Then I optimized it with resizable blockPerGrid, so that in each level of depth in scanning we can terminate idle threads. In upSweep and downSweep stage, modify the array index to maintain correctness. As a result, in test of array size larger than 16, the effiecient GPU approach has better performance than CPU approach.
 
-Compare 4 implementation, we can see that when the array size is small, the CPU approach has the best performance. Effiecient GPU approach is better than naive approach. After array size larger than 16, GPU implementation has better performance than CPU. For thrust approach, when array size is large, it has the best performance and the as the size grows, the running time doesn't increase much so it's quite stable.
+Compare these four implementation, we can see that when the array size is small, the CPU approach has the best performance. Effiecient GPU approach is better than naive approach. After array size larger than 16, GPU implementation has better performance than CPU. For thrust approach, when array size is large, it has the best performance and the as the size grows, the running time doesn't increase much so it's quite stable.
 
 I checked timeline when array size is 1 << 15. The function call of thrust::exclusive_scan is about one half of each kernel sweep call. So in the thrust implementation most expense is on memory allocation and copy. I guess the base cost for memory operation is quite big in thrust, but as the array size grows, since it might has some kind of memory access optimization like contiguous memory access, the memory operation cost might not increase a lot. As a result, in larger array, thrust implementation has the best performance.
 
